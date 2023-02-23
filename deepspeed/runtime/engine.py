@@ -389,6 +389,8 @@ class DeepSpeedEngine(Module):
             self.random_ltd_scheduler = self._configure_random_ltd_scheduler(
                 random_ltd_config)
 
+        self.create_inference_module()
+
         # Engine timers
 
         self.engine_timers = EngineTimers(
