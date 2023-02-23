@@ -15,10 +15,10 @@ class DS_BloomContainer(MetaTensorContainer, BaseTransformerContainer):
         # All model specific things should be defined here instead of the base class.
         self.bigscience_bloom = True
 
-    def create_module(self, config=None):
+    def create_module(self, config=None, set_empty_params=False):
         _config = config if config is not None else self.ds_model_config
 
-        self.module = DeepSpeedBloomInference(_config, mp_group=self.mp_group)
+        self.module = DeepSpeedBloomInference(_config, mp_group=self.mp_group, set_empty_params=set_empty_params)
         self.module.config.scale_attention = self.scale_attention
         return self.module
 

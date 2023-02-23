@@ -15,7 +15,7 @@ minus_inf = -10000.0
 class DeepSpeedSelfAttention(nn.Module):
     num_layers = 0
 
-    def __init__(self, config, mp_group=None, q_scales=None, q_groups=1, merge_count=1):
+    def __init__(self, config, mp_group=None, q_scales=None, q_groups=1, merge_count=1, set_empty_params=False):
         super(DeepSpeedSelfAttention, self).__init__()
         self.config = config
         data_type = torch.int8 if config.q_int8 else torch.half if config.fp16 else torch.float
@@ -24,27 +24,33 @@ class DeepSpeedSelfAttention(nn.Module):
         DeepSpeedSelfAttention.num_layers = DeepSpeedSelfAttention.num_layers + 1
         device = get_accelerator().current_device_name(
         )  #if config.bigscience_bloom else 'cpu'
-        qkv_size_per_partition = (self.config.hidden_size // self.config.mp_size) * 3
-        self.attn_qkvw = nn.Parameter(torch.empty(self.config.hidden_size,
+        if set_empty_params:
+            self.attn_qkvw = None
+            self.attn_qkvb = None
+            self.attn_ow = None
+            self.attn_ob = None
+        else:
+            qkv_size_per_partition = (self.config.hidden_size // self.config.mp_size) * 3
+            self.attn_qkvw = nn.Parameter(torch.empty(self.config.hidden_size,
                                                   qkv_size_per_partition,
                                                   dtype=data_type,
                                                   device=device),
                                       requires_grad=False)
-        self.attn_qkvb = nn.Parameter(torch.empty(qkv_size_per_partition,
-                                                  dtype=data_type_fp,
-                                                  device=device),
-                                      requires_grad=False)
-        out_size_per_partition = self.config.hidden_size // self.config.mp_size
-        self.attn_ow = nn.Parameter(torch.empty(out_size_per_partition,
-                                                self.config.hidden_size,
-                                                dtype=data_type,
-                                                device=device),
-                                    requires_grad=False)
+            self.attn_qkvb = nn.Parameter(torch.empty(qkv_size_per_partition,
+                                                      dtype=data_type_fp,
+                                                      device=device),
+                                          requires_grad=False)
+            out_size_per_partition = self.config.hidden_size // self.config.mp_size
+            self.attn_ow = nn.Parameter(torch.empty(out_size_per_partition,
+                                                    self.config.hidden_size,
+                                                    dtype=data_type,
+                                                    device=device),
+                                        requires_grad=False)
 
-        self.attn_ob = nn.Parameter(torch.empty(self.config.hidden_size,
-                                                dtype=data_type_fp,
-                                                device=device),
-                                    requires_grad=False)
+            self.attn_ob = nn.Parameter(torch.empty(self.config.hidden_size,
+                                                    dtype=data_type_fp,
+                                                    device=device),
+                                        requires_grad=False)
 
         self.num_attention_heads_per_partition = self.config.heads // self.config.mp_size
         self.hidden_size_per_partition = self.config.hidden_size // self.config.mp_size

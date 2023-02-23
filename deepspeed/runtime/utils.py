@@ -1013,3 +1013,18 @@ def all_gather_dp_groups(partitioned_param_groups,
             dist.all_gather(shard_list,
                             shard_list[partition_id],
                             dp_process_group[group_id])
+
+def transpose(data):
+    with torch.no_grad():
+        data = data.contiguous()
+        data1 = data.transpose(-1, -2).reshape(-1)
+        data.reshape(-1).copy_(data1)
+        data1 = None
+    return data.reshape(data.shape[-1], data.shape[-2])
+
+class TLinear(torch.nn.Linear):
+    def __init__(self, in_features, out_features, bias=True):
+        super().__init__(in_features, out_features, bias=bias)
+        self.weight.data = transpose(self.weight.data)
+    def forward(self, input):
+        return torch.matmul(input, self.weight) + bias

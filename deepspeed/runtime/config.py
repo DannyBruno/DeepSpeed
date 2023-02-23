@@ -538,6 +538,10 @@ def get_memory_breakdown(param_dict):
     return get_scalar_param(param_dict, MEMORY_BREAKDOWN, MEMORY_BREAKDOWN_DEFAULT)
 
 
+def get_linear_config(param_dict):
+    return (get_scalar_param(param_dict, LINEAR_TRANSPOSED_MODE, LINEAR_TRANSPOSED_MODE_DEFAULT), \
+            get_scalar_param(param_dict, INITIALIZE_WITH_LINEAR_TRANSPOSED, INITIALIZE_WITH_LINEAR_TRANSPOSED_DEFAULT))
+
 def get_eigenvalue_config(param_dict):
     if get_quantize_enabled(param_dict):
         param_dict = param_dict[QUANTIZE_TRAINING]
@@ -877,6 +881,8 @@ class DeepSpeedConfig(object):
             self.eigenvalue_layer_name,
             self.eigenvalue_layer_num,
         ) = get_eigenvalue_config(param_dict)
+
+        self.linear_transposed_mode, self.initialize_with_linear_transposed = get_linear_config(param_dict)
 
         self.sparse_attention = get_sparse_attention(param_dict)
         self.pipeline = get_pipeline_config(param_dict)

@@ -241,3 +241,17 @@ class BaseTransformerContainer(ABC):
         data = data.reshape(data.shape[-1], data.shape[-2])
         data.to(torch.cuda.current_device())
         return data
+
+    def set_params_wo_copy(self):
+        self.module.mlp.attn_nw = self.attn_nw
+        self.module.mlp.attn_nb = self.attn_nb
+        self.module.norm_w = self.input_nw
+        self.module.norm_b = self.input_nb
+        self.module.mlp.inter_w  = self._h4h_w
+        self.module.mlp.inter_b  = self._h4h_b
+        self.module.mlp.output_w = self._4hh_w
+        self.module.mlp.output_b = self._4hh_b
+        self.module.attention.attn_qkvw = self.qkvw 
+        self.module.attention.attn_qkvb = self.qkvb 
+        self.module.attention.attn_ow = self.dense_w
+        self.module.attention.attn_ob = self.dense_b

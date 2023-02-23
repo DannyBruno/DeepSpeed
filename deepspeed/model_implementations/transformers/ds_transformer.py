@@ -39,7 +39,8 @@ class DeepSpeedTransformerInference(nn.Module):
                  quantize_scales=None,
                  quantize_groups=1,
                  merge_count=1,
-                 mlp_extra_grouping=False):
+                 mlp_extra_grouping=False,
+                 set_empty_params=False):
         super(DeepSpeedTransformerInference, self).__init__()
 
         self.config = config
@@ -60,27 +61,34 @@ class DeepSpeedTransformerInference(nn.Module):
                                                 mp_group,
                                                 quantize_scales,
                                                 quantize_groups,
-                                                merge_count)
+                                                merge_count,
+                                                    set_empty_params)
         else:
             self.attention = DeepSpeedSelfAttention(self.config,
                                                     mp_group,
                                                     quantize_scales,
                                                     quantize_groups,
-                                                    merge_count)
+                                                    merge_count,
+                                                    set_empty_params)
         self.mlp = DeepSpeedMLP(self.config,
                                 mp_group,
                                 quantize_scales,
                                 quantize_groups,
                                 merge_count,
-                                mlp_extra_grouping)
+                                mlp_extra_grouping,
+                                set_empty_params)
 
         device = get_accelerator().current_device_name(
         )  # if config.bigscience_bloom else 'cpu'
-        self.norm_w = nn.Parameter(torch.empty(self.config.hidden_size,
+        if set_empty_params:
+            self.norm_w = None
+            self.norm_b = None
+        else:
+            self.norm_w = nn.Parameter(torch.empty(self.config.hidden_size,
                                                dtype=data_type,
                                                device=device),
                                    requires_grad=False)
-        self.norm_b = nn.Parameter(torch.empty(self.config.hidden_size,
+            self.norm_b = nn.Parameter(torch.empty(self.config.hidden_size,
                                                dtype=data_type,
                                                device=device),
                                    requires_grad=False)
